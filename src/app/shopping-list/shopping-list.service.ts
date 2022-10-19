@@ -15,7 +15,14 @@ export class ShoppingListService {
   }
 
   addIngredient(ingredient: Ingredient) {
-    this.ingredients.push(ingredient);
+    const existing = this.getIngredients().filter(ing => ing.name.toLowerCase() === ingredient.name.toLowerCase());
+    if (existing.length === 0){
+      this.ingredients.push(ingredient);
+    } else {
+      existing[0].amount += ingredient.amount;
+    }
+
+
     this.ingredientsChanged.emit(this.getIngredients());
   }
 }

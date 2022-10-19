@@ -17,6 +17,7 @@ export class RecipeDetailComponent implements OnInit {
 
   onAddToSL() {
     this.recipe.ingredients.forEach(ing => {
+      console.log(ing);
       this.slService.addIngredient(ing);
     });
   }

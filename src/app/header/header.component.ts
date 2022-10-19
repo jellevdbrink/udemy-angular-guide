@@ -6,13 +6,4 @@ import { Component, EventEmitter, Output } from "@angular/core";
 })
 export class HeaderComponent {
   collapsed: boolean = true;
-  @Output() navEvent = new EventEmitter<string>();
-
-  toRecipes() {
-     this.navEvent.emit('recipes');
-  }
-
-  toShoppingList() {
-    this.navEvent.emit('shoppingList');
-  }
 }

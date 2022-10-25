@@ -1,7 +1,8 @@
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { throwError } from "rxjs";
-import { catchError } from "rxjs/operators";
+import { Subject, throwError } from "rxjs";
+import { catchError, tap } from "rxjs/operators";
+import { User } from "./user.model";
 
 export interface AuthResponseData {
   kind: string,
@@ -15,6 +16,8 @@ export interface AuthResponseData {
 
 @Injectable({providedIn: 'root'})
 export class AuthService {
+  user = new Subject<User>();
+
   constructor(private http: HttpClient) {}
 
   signup(email: string, password: string) {
@@ -25,9 +28,32 @@ export class AuthService {
         password: password,
         returnSecureToken: true
       }
-    ).pipe(
-      catchError(errorRes => {
-        console.log(errorRes);
+    ).pipe(catchError(this.handleError), tap(resData => {
+      this.handleuserLogin(resData.email, resData.localId, resData.idToken, resData.idToken, +resData.expiresIn);
+    }))
+  }
+
+  login(email: string, password: string) {
+    return this.http.post<AuthResponseData>(
+      'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyCP85kY1bEC--ZfpI-MO4ueweDmnSYOZvs',
+      {
+        email: email,
+        password: password,
+        returnSecureToken: true
+      }
+    ).pipe(catchError(this.handleError), tap(resData => {
+      this.handleuserLogin(resData.email, resData.localId, resData.idToken, resData.idToken, +resData.expiresIn);
+    }))
+  }
+
+  handleuserLogin(email: string, localId: string, idToken: string, token: string, expiresIn: number) {
+    const exiprationDate = new Date(new Date().getTime() + expiresIn * 1000);
+    const user = new User(email, localId, idToken, exiprationDate);
+    this.user.next(user);
+  }
+
+  private handleError(errorRes: HttpErrorResponse) {
+    console.log(errorRes);
         let error = 'error';
         switch(errorRes.error.error.message) {
           case 'EMAIL_EXISTS':
@@ -39,24 +65,17 @@ export class AuthService {
           case 'TOO_MANY_ATTEMPTS_TRY_LATER':
             error = 'You have tried too many times, try again later';
             break;
+          case 'EMAIL_NOT_FOUND':
+            error = 'There is no account with that email';
+            break;
+          case 'INVALID_PASWORD':
+            error = 'That is an incorrect password';
+            break;
           default:
             error = 'An unknown error occured';
             break;
         }
 
         return throwError(error);
-      })
-    )
-  }
-
-  login(email: string, password: string) {
-    return this.http.post<AuthResponseData>(
-      'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyCP85kY1bEC--ZfpI-MO4ueweDmnSYOZvs',
-      {
-        email: email,
-        password: password,
-        returnSecureToken: true
-      }
-    )
   }
 }
